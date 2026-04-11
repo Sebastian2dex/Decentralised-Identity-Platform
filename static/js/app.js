@@ -284,14 +284,23 @@ function initVerifierPage() {
 
     this.classList.add('btn-loading');
     this.disabled = true;
-    const { ok, data } = await api.post('/verifier/login', { username, password });
+    let ok, data;
+    try {
+      ({ ok, data } = await api.post('/verifier/login', { username, password }));
+    } catch (err) {
+      this.classList.remove('btn-loading');
+      this.disabled = false;
+      flash($('#gate-flash'), `Network error: ${err.message}`, 'error');
+      return;
+    }
     this.classList.remove('btn-loading');
     this.disabled = false;
 
+    console.log('[login] status ok:', ok, 'data:', data);
     if (ok) {
       await refreshAuthState();
     } else {
-      flash($('#gate-flash'), `Error: ${data.error}`, 'error');
+      flash($('#gate-flash'), `Error: ${data.error || JSON.stringify(data)}`, 'error');
     }
   });
 
@@ -376,25 +385,28 @@ function renderCredentialResult(containerSel, data, showRevoke = false, did = ''
     return;
   }
 
-  /* active */
-  const header = el('div', 'flex items-center justify-between mt-1');
-  header.style.marginBottom = '1rem';
-  header.innerHTML = `
-    <div class="flex items-center gap-1">
-      <span class="badge badge-active">active</span>
-      <span class="text-mono text-muted" style="font-size:0.7rem">${data.credentials.length} credential(s)</span>
+  /* active — build entirely as HTML then wire onclick separately */
+  let activeHtml = `
+    <div class="flex items-center justify-between mt-1" style="margin-bottom:1rem">
+      <div class="flex items-center gap-1">
+        <span class="badge badge-active">active</span>
+        <span class="text-mono text-muted" style="font-size:0.7rem">${data.credentials.length} credential(s)</span>
+      </div>
+      ${showRevoke && did
+        ? `<button class="btn btn-danger" id="btn-revoke-did">Revoke DID</button>`
+        : ''}
     </div>`;
 
-  if (showRevoke && did) {
-    const rb = el('button', 'btn btn-danger', 'Revoke DID');
-    rb.onclick = () => revokeAction(did || data.did);
-    header.appendChild(rb);
+  for (const c of data.credentials) {
+    activeHtml += buildCredCard(c, false);
   }
 
-  container.appendChild(header);
+  container.innerHTML = activeHtml;
 
-  for (const c of data.credentials) {
-    container.innerHTML += buildCredCard(c, false);
+  // Wire revoke button AFTER innerHTML is set — onclick on the live DOM node
+  const revokeBtn = container.querySelector('#btn-revoke-did');
+  if (revokeBtn) {
+    revokeBtn.addEventListener('click', () => revokeAction(did || data.did));
   }
 }
 
