@@ -52,6 +52,7 @@ did_system/
 │   ├── __init__.py
 │   ├── did_utils.py            # generate_did(), is_valid_did(), sanitize_did()
 │   ├── auth_db.py              # SQLite user store, authenticate_user(), @login_required
+    ├── p2p_auth.py             # Implements HMAC based P2P authentication
 │   └── qr_utils.py            # generate_qr_base64() — returns data:image/png;base64,...
 │
 ├── templates/
