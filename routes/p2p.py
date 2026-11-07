@@ -11,8 +11,17 @@ Endpoints:
 
 from flask import Blueprint, request, jsonify, current_app
 
+
+
 p2p_bp = Blueprint("p2p", __name__, url_prefix="/p2p")
 
+from utils.p2p_auth import verify
+
+# Guard every /p2p/*
+@p2p_bp.before_request
+def _require_peer_auth():
+    if not verify(request):
+        return jsonify({"error": "Unauthorized peer"}), 401
 
 # ── GET /p2p/chain ────────────────────────────────────────────────────────────
 # Peer asks for our full chain so it can check if it's behind.
