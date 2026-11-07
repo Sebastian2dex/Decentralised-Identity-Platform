@@ -69,7 +69,7 @@ class Blockchain:
         except (FileNotFoundError, json.JSONDecodeError):
             genesis = Block(
                 index=0,
-                timestamp=time.time(),
+                timestamp=0.0,
                 block_type="GENESIS",
                 did="GENESIS",
                 data={"note": "Genesis block"},
