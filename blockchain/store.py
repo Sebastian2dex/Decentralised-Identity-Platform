@@ -19,6 +19,7 @@ import logging
 import requests
 from typing import Optional
 from blockchain.chain import Blockchain, Block
+from utils.p2p_auth import headers_for
 
 log = logging.getLogger(__name__)
 
@@ -91,6 +92,7 @@ class ChainStore:
             try:
                 r = requests.get(
                     f"{peer}/p2p/chain",
+                    headers=headers_for(),
                     timeout=self.SYNC_TIMEOUT
                 )
                 if r.status_code != 200:
@@ -129,12 +131,14 @@ class ChainStore:
         Runs in a background thread so writes don't block.
         """
         payload = block.to_dict()
+        body = json.dumps(block.to_dict()).encode()
 
         def _send(peer: str):
             try:
                 requests.post(
                     f"{peer}/p2p/receive-block",
-                    json=payload,
+                    data=body,
+                    headers={**headers_for(body), "Content-Type": "application/json"},
                     timeout=self.BROADCAST_TIMEOUT,
                 )
                 log.debug("Broadcast block %d to %s", block.index, peer)
